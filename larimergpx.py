@@ -45,7 +45,7 @@ f.write("""<?xml version="1.0" encoding="UTF-8"?>
 """)
 
 try:
-    for row in sheet.rows[4:]:
+    for row in sheet.rows:
         name = row[0].value
         try:
             elevation = row[7].value * FEET_TO_METERS
@@ -66,7 +66,15 @@ try:
 """ % (latitude, longitude, elevation, name))
         except UnicodeEncodeError:
             pass
+        if f == sys.stdout:
+            f.flush()
+except IOError:
+    pass
 except KeyboardInterrupt:
     print >> sys.stderr, "Aborting."
 finally:
-    f.write("</gpx>\n")
+    try:
+        f.write("</gpx>\n")
+        f.close()
+    except IOError:
+        pass
