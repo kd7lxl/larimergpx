@@ -20,11 +20,15 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
+import codecs
 import sys
 
 from openpyxl.reader.excel import load_workbook
 
 FEET_TO_METERS = 0.3048
+
+success = 0
+errors = []
 
 # input xlsx
 try:
@@ -36,7 +40,7 @@ sheet = wb.get_sheet_by_name(name='GNIS data extract on 2 Dec 2008')
 
 # output gpx
 try:
-    f = open(sys.argv[2], 'w')
+    f = codecs.open(sys.argv[2], encoding='utf-8', mode='w')
 except IndexError:
     f = sys.stdout
 
@@ -59,13 +63,16 @@ try:
             continue
         
         try:
-            f.write("""	<wpt lat="%s" lon="%s">
+            f.write(u"""	<wpt lat="%s" lon="%s">
 		<ele>%d</ele>
 		<name>%s</name>
 	</wpt>
 """ % (latitude, longitude, elevation, name))
+            success += 1
         except UnicodeEncodeError:
-            pass
+            errors.append("Can't print unicode character in row %s, skipping." % row[0].row)
+            print >> sys.stderr, "Error:", errors[-1]
+            continue
         if f == sys.stdout:
             f.flush()
 except IOError:
@@ -78,3 +85,12 @@ finally:
         f.close()
     except IOError:
         pass
+
+print >> sys.stderr, "\n%d waypoints exported." % success
+if errors:
+    print >> sys.stderr, "\nError summary:"
+    for error in errors:
+        print >> sys.stderr, '-', error
+    print >> sys.stderr
+    sys.exit(1)
+sys.exit(0)
