@@ -30,6 +30,9 @@ FEET_TO_METERS = 0.3048
 success = 0
 errors = []
 
+class CSV: pass
+class GPX: pass
+
 # input xlsx
 try:
     wb = load_workbook(filename=sys.argv[1])
@@ -39,13 +42,17 @@ except IndexError:
 sheet = wb.get_sheet_by_name(name='GNIS data extract on 2 Dec 2008')
 
 # output gpx
+format = GPX
 try:
     f = codecs.open(sys.argv[2], encoding='utf-8', mode='w')
+    if sys.argv[2].endswith('csv'):
+        format = CSV
 except IndexError:
     f = sys.stdout
 
-f.write("""<?xml version="1.0" encoding="UTF-8"?>
-<gpx version="1.0">
+if format is GPX:
+    f.write("""<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="larimergpx in python">
 """)
 
 try:
@@ -63,11 +70,17 @@ try:
             continue
         
         try:
-            f.write(u"""	<wpt lat="%s" lon="%s">
-		<ele>%d</ele>
-		<name>%s</name>
-	</wpt>
-""" % (latitude, longitude, elevation, name))
+            if format is GPX:
+                f.write("""  <wpt lat="%s" lon="%s">
+    <ele>%d</ele>
+    <name>%s</name>
+    <cmt>%s</cmt>
+    <desc>%s</desc>
+  </wpt>
+""" % (latitude, longitude, elevation, name, name, name))
+            elif format is CSV:
+                f.write("""%s,%s,%s
+""" % (latitude, longitude, name))
             success += 1
         except UnicodeEncodeError:
             errors.append("Can't print unicode character in row %s, skipping." % row[0].row)
@@ -81,14 +94,15 @@ except KeyboardInterrupt:
     print >> sys.stderr, "Aborting."
 finally:
     try:
-        f.write("</gpx>\n")
+        if format is GPX:
+            f.write("</gpx>")
         f.close()
     except IOError:
         pass
 
-print >> sys.stderr, "\n%d waypoints exported." % success
+print >> sys.stderr, "\n%d waypoints exported.\n" % success
 if errors:
-    print >> sys.stderr, "\nError summary:"
+    print >> sys.stderr, "Error summary:"
     for error in errors:
         print >> sys.stderr, '-', error
     print >> sys.stderr
