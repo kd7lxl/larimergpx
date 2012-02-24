@@ -51,8 +51,7 @@ except IndexError:
     f = sys.stdout
 
 if format is GPX:
-    f.write("""<?xml version="1.0" encoding="UTF-8"?>
-<gpx version="1.1" creator="larimergpx in python">
+    f.write("""<?xml version="1.0" encoding="UTF-8"?>\r\n<gpx version="1.1" creator="larimergpx in python">
 """)
 
 try:
@@ -71,16 +70,9 @@ try:
         
         try:
             if format is GPX:
-                f.write("""  <wpt lat="%s" lon="%s">
-    <ele>%d</ele>
-    <name>%s</name>
-    <cmt>%s</cmt>
-    <desc>%s</desc>
-  </wpt>
-""" % (latitude, longitude, elevation, name, name, name))
+                f.write("""  <wpt lat="%s" lon="%s">\r\n    <ele>%d</ele>\r\n    <name>%s</name>\r\n    <cmt>%s</cmt>\r\n    <desc>%s</desc>\r\n  </wpt>\r\n""" % (latitude, longitude, elevation, name, name, name))
             elif format is CSV:
-                f.write("""%s,%s,%s
-""" % (latitude, longitude, name))
+                f.write("""%s,%s,%s\r\n""" % (latitude, longitude, name))
             success += 1
         except UnicodeEncodeError:
             errors.append("Can't print unicode character in row %s, skipping." % row[0].row)
