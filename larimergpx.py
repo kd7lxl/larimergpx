@@ -26,6 +26,7 @@ import sys
 from openpyxl.reader.excel import load_workbook
 
 FEET_TO_METERS = 0.3048
+extralinesep = '' # change to '<br>' for Nuvi 350
 
 success = 0
 errors = []
@@ -51,8 +52,7 @@ except IndexError:
     f = sys.stdout
 
 if format is GPX:
-    f.write("""<?xml version="1.0" encoding="UTF-8"?>\r\n<gpx version="1.1" creator="larimergpx in python">
-""")
+    f.write("""<?xml version="1.0" encoding="UTF-8"?>\r\n<gpx xmlns="http://www.topografix.com/GPX/1/1" creator="larimergpx python" version="1.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd">\r\n""")
 
 try:
     for row in sheet.rows:
@@ -65,14 +65,33 @@ try:
         latitude = row[8].value
         longitude = row[9].value
         if type(longitude) is not float or type(latitude) is not float:
-            # lat or long is not a number, skip
+            # lat or lon is not a number, skip
             continue
+        page = row[1].value or ''
+        grid = row[2].value or ''
+        sarutm = row[3].value
+        topo = row[12].value
+        county = row[13].value
+        state = row[14].value
         
         try:
             if format is GPX:
-                f.write("""  <wpt lat="%s" lon="%s">\r\n    <ele>%d</ele>\r\n    <name>%s</name>\r\n    <cmt>%s</cmt>\r\n    <desc>%s</desc>\r\n  </wpt>\r\n""" % (latitude, longitude, elevation, name, name, name))
+                f.write("""  <wpt lat="%(latitude)s" lon="%(longitude)s">\r\n""" \
+                        """    <ele>%(elevation)d</ele>\r\n""" \
+                        """    <name>%(name)s</name>\r\n""" \
+                       #"""    <cmt>%(name)s</cmt>\r\n""" \
+                        """    <desc>""" \
+                        """Gazetteer: %(page)s %(grid)s%(extralinesep)s\r\n""" \
+                        """SAR UTM: %(sarutm)s%(extralinesep)s\r\n""" \
+                        """Topo Map: %(topo)s%(extralinesep)s\r\n""" \
+                        """%(county)s, %(state)s</desc>\r\n""" \
+                        """  </wpt>\r\n""" % locals())
             elif format is CSV:
-                f.write("""%s,%s,%s\r\n""" % (latitude, longitude, name))
+                f.write("""%(latitude)s,%(longitude)s,%(name)s,""" \
+                        """"Gazetteer: %(page)s %(grid)s%(extralinesep)s\r\n""" \
+                        """SAR UTM: %(sarutm)s%(extralinesep)s\r\n""" \
+                        """Topo Map: %(topo)s%(extralinesep)s\r\n""" \
+                        """%(county)s, %(state)s"\r\n""" % locals())
             success += 1
         except UnicodeEncodeError:
             errors.append("Can't print unicode character in row %s, skipping." % row[0].row)
